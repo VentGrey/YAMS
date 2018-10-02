@@ -8,6 +8,13 @@
  * Autor: Omar Jair Purata Funes
  * ----------EOF-----------*/
 
+
+//Crates propias (porque soy gil y tuve que hacer una)
+extern crate hola;
+use hola::ThreadPool;
+
+
+//Bibliotecas normales, favor de no mover.
 use std::io::prelude::*;
 use std::net::TcpListener;
 use std::net::TcpStream;
