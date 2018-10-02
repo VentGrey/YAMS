@@ -28,10 +28,17 @@ fn handle_connection(mut stream: TcpStream) {
 
     stream.read(&mut buffer).unwrap();
 
+    let get = b"GET / HTTP/1.1\r\n";
+
+    if buffer.starts_with(get) {
+
     let contents = fs::read_to_string("hola.html").unwrap();
 
     let respuesta = "HTTP/1.1 200 OK\r\n\r\n";
 
     stream.write(respuesta.as_bytes()).unwrap();
     stream.flush().unwrap();
+    } else {
+        //otras cosas por ahora
+    }
 }
