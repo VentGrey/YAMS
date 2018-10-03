@@ -1,9 +1,12 @@
 use std::thread;
 use std::sync::mpsc;
-
-//-Bibliotecas para mover variables
 use std::sync::Arc;
 use std::sync::Mutex;
+
+enum Message {
+    NewJob(Job),
+    Terminate,
+}
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
@@ -110,7 +113,4 @@ impl Drop for ThreadPool {
     }
 }
 
-enum Message {
-    NewJob(Job),
-    Terminate,
-}
+
