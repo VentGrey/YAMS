@@ -83,7 +83,9 @@ impl Drop for ThreadPool {
         for worker in &mut self.workers {
             println!("Apagando el proceso {}", worker.id);
 
-            worker.thread.join().unwrap();
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
         }
     }
 }
