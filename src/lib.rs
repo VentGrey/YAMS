@@ -12,7 +12,18 @@ pub struct ThreadPool {
 
 struct Job;
 
-type Job = Box<FnOnce() + Send + 'static>;
+trait FnBox {
+    fn call_box(self: Box<Self>);
+}
+
+impl <F: FnOnce()> FnBox for F {
+    fn call_box(self: Box <F>) {
+        (*self)()
+    }
+}
+
+
+type Job = Box<FnBox + Send + 'static>;
 
 impl ThreadPool {
 
@@ -53,12 +64,10 @@ struct Worker {
 impl Worker {
     fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
         let thread = thread::spawn(move || {
-            loop {
-                let job = receiver.lock().unwrap().recv().unwrap();
+            while let Ok(job) = receiver.lock().unwrap().recv() {
+                println!("Worker {} tiene un trabajo; En ejecución", id);
 
-                println!("El proceso {} tiene un trabajo; Ejecutandose...", id);
-
-                (*job)(); //Ya'll know what this is.
+                job.call_box();
             }
         });
 
