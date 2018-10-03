@@ -1,12 +1,18 @@
 use std::thread;
 use std::sync::mpsc;
 
+//-Bibliotecas para mover variables
+use std::sync::Arc;
+use std::sync::Mutex;
+
 pub struct ThreadPool {
     workers: Vec<Worker>,
     sender: mpsc::Sender<Job>,
 }
 
 struct Job;
+
+type Job = Box<FnOnce() + Send + 'static>;
 
 impl ThreadPool {
 
@@ -15,10 +21,12 @@ impl ThreadPool {
 
         let (sender, receiver) = mpsc::channel();
 
+        let receiver = Arc::new(Mutex::new(receiver));
+
         let mut workers = Vec::with_capacity(size);
 
         for id in 0..size {
-            workers.push(Worker::new(id, receiver));
+            workers.push(Worker::new(id, Arc::clone(&receiver)));
         }
 
         ThreadPool {
@@ -31,7 +39,9 @@ impl ThreadPool {
         where
             F: FnOnce() + Send + 'static
     {
+        let job = Box::new(f);
 
+        self.sender.send(job).unwrap();
     }
 }
 
@@ -41,9 +51,15 @@ struct Worker {
 }
 
 impl Worker {
-    fn new(id: usize, receiver: mpsc::Receiver<Job>) -> Worker {
-        let thread = thread::spawn(|| {
-            receiver;
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
+        let thread = thread::spawn(move || {
+            loop {
+                let job = receiver.lock().unwrap().recv().unwrap();
+
+                println!("El proceso {} tiene un trabajo; Ejecutandose...", id);
+
+                (*job)(); //Ya'll know what this is.
+            }
         });
 
         Worker {
