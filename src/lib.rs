@@ -7,7 +7,7 @@ use std::sync::Mutex;
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
-    sender: mpsc::Sender<Job>,
+    sender: mpsc::Sender<Message>,
 }
 
 struct Job;
@@ -45,14 +45,13 @@ impl ThreadPool {
             sender,
         }
     }
-
     pub fn execute<F>(&self, f: F)
         where
             F: FnOnce() + Send + 'static
     {
         let job = Box::new(f);
 
-        self.sender.send(job).unwrap();
+        self.sender.send(Message::NewJob(job)).unwrap();
     }
 }
 
@@ -62,12 +61,25 @@ struct Worker {
 }
 
 impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
-        let thread = thread::spawn(move || {
-            while let Ok(job) = receiver.lock().unwrap().recv() {
-                println!("Worker {} tiene un trabajo; En ejecución", id);
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) ->
+        Worker {
 
-                job.call_box();
+        let thread = thread::spawn(move ||{
+            loop {
+                let message = receiver.lock().unwrap().recv().unwrap();
+
+                match message {
+                    Message::NewJob(job) => {
+                        println!("Worker {} got a job; executing.", id);
+
+                        job.call_box();
+                    },
+                    Message::Terminate => {
+                        println!("Worker {} was told to terminate.", id);
+
+                        break;
+                    },
+                }
             }
         });
 
@@ -88,4 +100,9 @@ impl Drop for ThreadPool {
             }
         }
     }
+}
+
+enum Message {
+    NewJob(Job),
+    Terminate,
 }
