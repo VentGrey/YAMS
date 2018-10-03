@@ -13,8 +13,6 @@ pub struct ThreadPool {
     sender: mpsc::Sender<Message>,
 }
 
-struct Job;
-
 trait FnBox {
     fn call_box(self: Box<Self>);
 }
@@ -24,7 +22,6 @@ impl <F: FnOnce()> FnBox for F {
         (*self)()
     }
 }
-
 
 type Job = Box<FnBox + Send + 'static>;
 
@@ -55,6 +52,26 @@ impl ThreadPool {
         let job = Box::new(f);
 
         self.sender.send(Message::NewJob(job)).unwrap();
+    }
+}
+
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        println!("Eliminando a todos los de la clase obrera...");
+
+        for _ in &mut self.workers {
+            self.sender.send(Message::Terminate).unwrap();
+        }
+
+        println!("Eliminando a los trabajadores");
+
+        for worker in &mut self.workers {
+            println!("Obliterando al trabajador {}", worker.id);
+
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
+        }
     }
 }
 
@@ -92,25 +109,3 @@ impl Worker {
         }
     }
 }
-
-impl Drop for ThreadPool {
-    fn drop(&mut self) {
-        println!("Eliminando a todos los de la clase obrera...");
-
-        for _ in &mut self.workers {
-            self.sender.send(Message::Terminate).unwrap();
-        }
-
-        println!("Eliminando a los trabajadores");
-
-        for worker in &mut self.workers {
-            println!("Obliterando al trabajador {}", worker.id);
-
-            if let Some(thread) = worker.thread.take() {
-                thread.join().unwrap();
-            }
-        }
-    }
-}
-
-
