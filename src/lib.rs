@@ -70,12 +70,12 @@ impl Worker {
 
                 match message {
                     Message::NewJob(job) => {
-                        println!("Worker {} got a job; executing.", id);
+                        println!("Worker {} tiene un trabajo; en ejecución.", id);
 
                         job.call_box();
                     },
                     Message::Terminate => {
-                        println!("Worker {} was told to terminate.", id);
+                        println!("Worker {} tuvo que ser obliterado.", id);
 
                         break;
                     },
@@ -92,16 +92,16 @@ impl Worker {
 
 impl Drop for ThreadPool {
     fn drop(&mut self) {
-        println!("Sending terminate message to all workers.");
+        println!("Eliminando a todos los de la clase obrera...");
 
         for _ in &mut self.workers {
             self.sender.send(Message::Terminate).unwrap();
         }
 
-        println!("Shutting down all workers.");
+        println!("Eliminando a los trabajadores");
 
         for worker in &mut self.workers {
-            println!("Shutting down worker {}", worker.id);
+            println!("Obliterando al trabajador {}", worker.id);
 
             if let Some(thread) = worker.thread.take() {
                 thread.join().unwrap();
