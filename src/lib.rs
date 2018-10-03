@@ -77,3 +77,13 @@ impl Worker {
         }
     }
 }
+
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        for worker in &mut self.workers {
+            println!("Apagando el proceso {}", worker.id);
+
+            worker.thread.join().unwrap();
+        }
+    }
+}
