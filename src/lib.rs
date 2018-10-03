@@ -73,7 +73,7 @@ impl Worker {
 
         Worker {
             id,
-            thread,
+            thread: Some(thread),
         }
     }
 }
