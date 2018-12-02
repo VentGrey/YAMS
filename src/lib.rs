@@ -1,7 +1,7 @@
-use std::thread;
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::thread;
 
 enum Message {
     NewJob(Job),
@@ -17,8 +17,8 @@ trait FnBox {
     fn call_box(self: Box<Self>);
 }
 
-impl <F: FnOnce()> FnBox for F {
-    fn call_box(self: Box <F>) {
+impl<F: FnOnce()> FnBox for F {
+    fn call_box(self: Box<F>) {
         (*self)()
     }
 }
@@ -26,7 +26,6 @@ impl <F: FnOnce()> FnBox for F {
 type Job = Box<FnBox + Send + 'static>;
 
 impl ThreadPool {
-
     pub fn new(size: usize) -> ThreadPool {
         assert!(size > 0);
 
@@ -40,14 +39,11 @@ impl ThreadPool {
             workers.push(Worker::new(id, Arc::clone(&receiver)));
         }
 
-        ThreadPool {
-            workers,
-            sender,
-        }
+        ThreadPool { workers, sender }
     }
     pub fn execute<F>(&self, f: F)
-        where
-            F: FnOnce() + Send + 'static
+    where
+        F: FnOnce() + Send + 'static,
     {
         let job = Box::new(f);
 
@@ -81,24 +77,20 @@ struct Worker {
 }
 
 impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) ->
-        Worker {
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> Worker {
+        let thread = thread::spawn(move || loop {
+            let message = receiver.lock().unwrap().recv().unwrap();
 
-        let thread = thread::spawn(move ||{
-            loop {
-                let message = receiver.lock().unwrap().recv().unwrap();
+            match message {
+                Message::NewJob(job) => {
+                    println!("Worker {} tiene un trabajo; en ejecución.", id);
 
-                match message {
-                    Message::NewJob(job) => {
-                        println!("Worker {} tiene un trabajo; en ejecución.", id);
+                    job.call_box();
+                }
+                Message::Terminate => {
+                    println!("Worker {} tuvo que ser obliterado.", id);
 
-                        job.call_box();
-                    },
-                    Message::Terminate => {
-                        println!("Worker {} tuvo que ser obliterado.", id);
-
-                        break;
-                    },
+                    break;
                 }
             }
         });

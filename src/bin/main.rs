@@ -8,17 +8,15 @@
  * Autor: Omar Jair Purata Funes
  * ----------EOF-----------*/
 
-
 //Crates propias (porque soy gil y tuve que hacer una)
 extern crate server;
 use server::ThreadPool;
 
-
 //Bibliotecas normales, favor de no mover.
+use std::fs;
 use std::io::prelude::*;
 use std::net::TcpListener;
 use std::net::TcpStream;
-use std::fs;
 
 //Multihilo (Esta cosa es del diablo, no la toque si no sabe lo que hace)
 use std::thread;
@@ -39,8 +37,6 @@ fn main() {
     println!("x.x");
 }
 
-
-
 fn handle_connection(mut stream: TcpStream) {
     let mut buffer = [0; 512];
 
@@ -58,10 +54,10 @@ fn handle_connection(mut stream: TcpStream) {
         ("HTTP/1.1 404 NOT FOUND\r\n\r\n", "404.html")
     };
 
-        let contents = fs::read_to_string(filename).unwrap();
+    let contents = fs::read_to_string(filename).unwrap();
 
-        let response = format!("{}{}", status_line, contents);
+    let response = format!("{}{}", status_line, contents);
 
-        stream.write(response.as_bytes()).unwrap();
-        stream.flush().unwrap();
+    stream.write(response.as_bytes()).unwrap();
+    stream.flush().unwrap();
 }
